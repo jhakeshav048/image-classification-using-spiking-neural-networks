@@ -26,7 +26,7 @@ def preprocess_images(image_paths, target_size=(28, 28)):
         images.append(img)
     return np.array(images)
 
-def encode_spikes(images, threshold=0.5):
+def encode_spikes(images, timesteps=15):
     """
     Encode images into spike trains using a threshold.
 
@@ -37,8 +37,11 @@ def encode_spikes(images, threshold=0.5):
     Returns:
         np.ndarray: Spike-encoded images.
     """
-    spikes = np.where(images >= threshold, 1, 0)
-    return spikes
+    # Pre-compute probabilities
+    probs = np.tile(images, (timesteps, 1, 1)).transpose(1, 0, 2)
+    # Generate all spikes at once
+    spikes = np.random.random(probs.shape) < probs
+    return spikes.astype(np.float32)  # Use float32 to save memory
 
 def load_dataset(dataset_path):
     """
@@ -80,15 +83,10 @@ def load_mnist():
         tuple: (train_images, train_labels, test_images, test_labels)
     """
     (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
-
-    # Normalize images to [0, 1]
     train_images = train_images / 255.0
     test_images = test_images / 255.0
-
-    # Flatten images to 1D arrays
     train_images = train_images.reshape(train_images.shape[0], -1)
     test_images = test_images.reshape(test_images.shape[0], -1)
-
     return train_images, train_labels, test_images, test_labels
 
 
